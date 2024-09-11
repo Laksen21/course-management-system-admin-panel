@@ -67,7 +67,7 @@ function Navbar() {
   ];
 
   return (
-    <AppBar position="static">
+    <AppBar position="sticky">
       <Container maxWidth="xl">
         <Toolbar disableGutters>
           <SchoolRoundedIcon fontSize="large" sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }} />

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Box, Container, Typography, TextField, Button, Select,
-    MenuItem, FormControl, InputLabel, Paper, Table,
+    Box, Container, Typography, TextField, Button, Select,IconButton,
+    MenuItem, FormControl, InputLabel, Paper, Table, Tooltip,
     TableBody, TableCell, TableContainer, TableHead, TableRow
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
+import { Edit as EditIcon, Delete as DeleteIcon } from 'lucide-react';
 
 const Students = () => {
     const [students, setStudents] = useState([]);
@@ -94,8 +95,8 @@ const Students = () => {
                             <TextField id="standard-search" label="Search Id" type="search" sx={{ mr: { sm: 2 }, width: '25ch' }} />
                             <Button variant="contained" sx={{ mt: '1px', height: '55px' }} >Search</Button>
                         </Paper>
-                        <Box sx={{ flexGrow: 1, overflowY: 'auto'}}>
-                            <Grid container spacing={2} sx={{  mt: 2, }}>
+                        <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
+                            <Grid container spacing={2} sx={{ mt: 2, }}>
                                 <Grid size={6}>
                                     <TextField
                                         fullWidth
@@ -205,8 +206,16 @@ const Students = () => {
                                             <TableCell>{student.email}</TableCell>
                                             <TableCell>{student.coursesEnrolled.join(', ')}</TableCell>
                                             <TableCell>
-                                                <Button color='warning' onClick={() => handleEditStudent(student)}>Edit</Button>
-                                                <Button color='error' onClick={() => handleDeleteStudent(student.id)}>Delete</Button>
+                                                <Tooltip title="Edit student">
+                                                    <IconButton sx={{ mr: 2 }} edge="end" aria-label="edit" onClick={() => handleEditStudent(student)}>
+                                                        <EditIcon color="blue" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                <Tooltip title="Delete student">
+                                                    <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteStudent(student.id)}>
+                                                        <DeleteIcon color="red" />
+                                                    </IconButton>
+                                                </Tooltip>
                                             </TableCell>
                                         </TableRow>
                                     ))}
