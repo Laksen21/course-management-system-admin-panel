@@ -96,18 +96,18 @@ function Courses() {
                     <TextField
                         autoFocus
                         margin="dense"
-                        name="id"
-                        label="Course ID"
+                        name="code"
+                        label="Code"
                         type="text"
                         fullWidth
-                        value={currentCourse.id}
+                        value={currentCourse.code}
                         onChange={handleInputChange}
                     />
                     <TextField
                         autoFocus
                         margin="dense"
                         name="title"
-                        label="Course Title"
+                        label="Title"
                         type="text"
                         fullWidth
                         value={currentCourse.title}

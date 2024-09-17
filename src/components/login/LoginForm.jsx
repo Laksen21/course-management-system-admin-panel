@@ -3,13 +3,13 @@ import React, { useState } from 'react';
 import { Box, Card, CardContent, TextField, Button, Typography, Container } from '@mui/material';
 
 function LoginForm({ onLogin }) {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    console.log('Login submitted', { email, password });
-    onLogin({ email, password });
+    //console.log('Login submitted', { email, password });
+    onLogin({ username, password });
   };
 
   return (
@@ -26,12 +26,12 @@ function LoginForm({ onLogin }) {
               required
               fullWidth
               id="email"
-              label="Email Address"
-              name="email"
-              autoComplete="email"
+              label="Username"
+              name="username"
+              autoComplete="username"
               autoFocus
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
             />
             <TextField
               variant="standard"

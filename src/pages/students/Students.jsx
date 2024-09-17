@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Box, Container, Typography, TextField, Button, Select,IconButton,
+    Box, Container, Typography, TextField, Button, Select, IconButton,
     MenuItem, FormControl, InputLabel, Paper, Table, Tooltip,
     TableBody, TableCell, TableContainer, TableHead, TableRow
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
+import axios from "axios";
 import { Edit as EditIcon, Delete as DeleteIcon } from 'lucide-react';
+
+const token = localStorage.getItem('token');
 
 const Students = () => {
     const [students, setStudents] = useState([]);
@@ -16,18 +19,19 @@ const Students = () => {
         id: '',
         name: '',
         email: '',
-        tel: '',
+        tel_no: '',
         address: '',
-        coursesEnrolled: [],
+        courses: [],
         appPassword: '',
-        enrollmentDate: new Date(),
     });
     const [editingStudent, setEditingStudent] = useState(null);
+    const [searchId, setSearchId] = useState('')
 
     useEffect(() => {
         // Fetch courses from database
         // This is a mock implementation
-        setCourses(['Math', 'Science', 'History', 'English']);
+        loadAllStudents();
+        loadAllCourses();
     }, []);
 
     const handleInputChange = (event) => {
@@ -35,54 +39,159 @@ const Students = () => {
         setNewStudent((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleDateChange = (date) => {
-        setNewStudent((prev) => ({ ...prev, enrollmentDate: date }));
+    const handleSearchById = () => {
+        axios.get(`http://localhost:8080/student/${searchId}`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+            .then(function (response) {
+                //console.log(response);
+                setNewStudent({
+                    id: response.data.id,
+                    name: response.data.name,
+                    email: response.data.email,
+                    tel_no: response.data.tel_no,
+                    address: response.data.address,
+                    courses: response.data.courses,
+                    appPassword: response.data.appPassword,
+                });
+            })
+            .catch(function (error) {
+                console.log(error);
+
+            });
     };
 
     const handleCourseChange = (event) => {
-        setNewStudent((prev) => ({ ...prev, coursesEnrolled: event.target.value }));
+        const { target: { value } } = event;
+
+        // Since value will already contain full course objects, just update the state directly
+        setNewStudent((prevState) => ({
+            ...prevState,
+            courses: value, // set the selected course objects directly
+        }));
     };
 
-    const handleAddStudent = () => {
-        setStudents((prev) => [...prev, { ...newStudent, id: Date.now().toString() }]);
-        setNewStudent({
-            id: '',
-            name: '',
-            email: '',
-            tel: '',
-            address: '',
-            coursesEnrolled: [],
-            appPassword: '',
-            enrollmentDate: new Date(),
-        });
-    };
 
     const handleEditStudent = (student) => {
         setEditingStudent(student);
-        setNewStudent(student);
+
+        const selectedCourses = student.courses.map((studentCourse) => {
+            return courses.find((course) => course.code === studentCourse.code);
+        });
+
+        setNewStudent({
+            ...student,
+            courses: selectedCourses, // set full course objects
+        });
+    };
+
+    const handleAddStudent = () => {
+
+        axios.post('http://localhost:8080/student/student_with_course', {
+            "name": newStudent.name,
+            "email": newStudent.email,
+            "address": newStudent.address,
+            "tel_no": newStudent.tel_no,
+            "appPassword": newStudent.appPassword,
+            "courses": newStudent.courses
+        }, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+            .then(function (response) {
+                console.log(response);
+                clearFields();
+                loadAllStudents();
+            })
+            .catch(function (error) {
+                console.log(error);
+            });
     };
 
     const handleUpdateStudent = () => {
-        setStudents((prev) =>
-            prev.map((student) => (student.id === editingStudent.id ? newStudent : student))
-        );
-        setEditingStudent(null);
+
+        axios.put(`http://localhost:8080/student/student_with_course/${newStudent.id}`, {
+            "name": newStudent.name,
+            "email": newStudent.email,
+            "address": newStudent.address,
+            "tel_no": newStudent.tel_no,
+            "appPassword": newStudent.appPassword,
+            "courses": newStudent.courses
+        }, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+            .then(function (response) {
+                console.log(response);
+                setEditingStudent(null);
+                clearFields();
+                loadAllStudents();
+            })
+            .catch(function (error) {
+                console.log(error);
+
+            });
+    };
+
+    const handleDeleteStudent = (id) => {
+        axios.delete(`http://localhost:8080/student/${id}`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+            .then(function (response) {
+                // console.log(response);
+                loadAllStudents();
+            })
+            .catch(function (error) {
+                console.log(error);
+            });
+    };
+
+    const loadAllStudents = () => {
+        axios.get('http://localhost:8080/student', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+            .then(function (response) {
+                // console.log(response);
+                setStudents(response.data);
+            })
+            .catch(function (error) {
+                console.log(error);
+            });
+    }
+
+    const loadAllCourses = () => {
+        axios.get('http://localhost:8080/course', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+            .then(response => {
+                setCourses(response.data);
+            })
+            .catch(error => {
+                console.error(error);
+            });
+    };
+
+    const clearFields = () => {
         setNewStudent({
             id: '',
             name: '',
             email: '',
-            tel: '',
+            tel_no: '',
             address: '',
-            coursesEnrolled: [],
+            courses: [],
             appPassword: '',
-            enrollmentDate: new Date(),
         });
-    };
-
-    const handleDeleteStudent = (id) => {
-        setStudents((prev) => prev.filter((student) => student.id !== id));
-    };
-
+    }
     return (
         <Container maxWidth="xl" sx={{ mt: 2, height: 'calc(100vh - 100px)' }}>
             <Typography variant="h4" fontWeight="550" gutterBottom>
@@ -92,8 +201,15 @@ const Students = () => {
                 <Grid size={6} sx={{ height: '100%', overflowY: 'auto' }}>
                     <Paper elevation={3} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
                         <Paper elevation={1} sx={{ p: 1, mb: 2, width: '100%' }}>
-                            <TextField id="standard-search" label="Search Id" type="search" sx={{ mr: { sm: 2 }, width: '25ch' }} />
-                            <Button variant="contained" sx={{ mt: '1px', height: '55px' }} >Search</Button>
+                            <TextField
+                                id="standard-search"
+                                label="Search Id"
+                                type="search"
+                                name='searchId'
+                                value={searchId}
+                                onChange={(e) => { setSearchId(e.target.value) }}
+                                sx={{ mr: { sm: 2 }, width: '25ch' }} />
+                            <Button variant="contained" sx={{ mt: '1px', height: '55px' }} onClick={handleSearchById}>Search</Button>
                         </Paper>
                         <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
                             <Grid container spacing={2} sx={{ mt: 2, }}>
@@ -120,8 +236,8 @@ const Students = () => {
                                     <TextField
                                         fullWidth
                                         label="Telephone"
-                                        name="tel"
-                                        value={newStudent.tel}
+                                        name="tel_no"
+                                        value={newStudent.tel_no}
                                         onChange={handleInputChange}
                                     />
                                 </Grid>
@@ -145,33 +261,24 @@ const Students = () => {
                                     />
                                 </Grid>
 
-                                <Grid size={8}>
+                                <Grid size={12}>
                                     <FormControl fullWidth>
                                         <InputLabel>Courses Enrolled</InputLabel>
                                         <Select
                                             multiple
-                                            value={newStudent.coursesEnrolled}
+                                            value={newStudent.courses} // This should hold the entire course objects
                                             onChange={handleCourseChange}
-                                            renderValue={(selected) => selected.join(', ')}
+                                            renderValue={(selected) => selected.map(course => course.title).join(', ')} // Display course titles in the input
                                         >
                                             {courses.map((course) => (
-                                                <MenuItem key={course} value={course}>
-                                                    {course}
+                                                <MenuItem key={course.id} value={course}>
+                                                    {course.title}
                                                 </MenuItem>
                                             ))}
                                         </Select>
                                     </FormControl>
                                 </Grid>
-                                <Grid size={4}>
-                                    <LocalizationProvider dateAdapter={AdapterDateFns}>
-                                        <DatePicker
-                                            label="Enrollment Date"
-                                            value={newStudent.enrollmentDate}
-                                            onChange={handleDateChange}
-                                            textField={(params) => <TextField {...params} fullWidth />}
-                                        />
-                                    </LocalizationProvider>
-                                </Grid>
+
                                 <Grid size={12} >
                                     <Button
                                         variant="contained"
@@ -179,6 +286,14 @@ const Students = () => {
                                         onClick={editingStudent ? handleUpdateStudent : handleAddStudent}
                                     >
                                         {editingStudent ? 'Update Student' : 'Add Student'}
+                                    </Button>
+                                    <Button
+                                        variant="contained"
+                                        color="error"
+                                        onClick={clearFields}
+                                        sx={{ml:2}}
+                                    >
+                                        Clear
                                     </Button>
                                 </Grid>
                             </Grid>
@@ -204,7 +319,11 @@ const Students = () => {
                                             <TableCell>{student.id}</TableCell>
                                             <TableCell>{student.name}</TableCell>
                                             <TableCell>{student.email}</TableCell>
-                                            <TableCell>{student.coursesEnrolled.join(', ')}</TableCell>
+                                            <TableCell>
+                                                {student.courses && student.courses.length > 0
+                                                    ? student.courses.map((course) => course.title).join(', ')
+                                                    : 'No courses'}
+                                            </TableCell>
                                             <TableCell>
                                                 <Tooltip title="Edit student">
                                                     <IconButton sx={{ mr: 2 }} edge="end" aria-label="edit" onClick={() => handleEditStudent(student)}>

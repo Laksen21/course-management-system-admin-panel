@@ -24,7 +24,7 @@ function App() {
 
   const handleLogin = (credentials) => {
     axios.post('http://localhost:8080/user/login', {
-      "email": credentials.email,
+      "username": credentials.username,
       "password": credentials.password
     })
       .then(function (response) {
@@ -55,11 +55,11 @@ function App() {
           </Routes>
         </BrowserRouter>
 
-        {/* {!isLoggedIn && (
+        {!isLoggedIn && (
           <div className="overlay">
             <LoginForm onLogin={handleLogin} />
           </div>
-        )} */}
+        )}
       </ThemeProvider>
     </>
   )
