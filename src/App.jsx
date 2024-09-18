@@ -32,6 +32,7 @@ function App() {
         if (response.data.token) {
           localStorage.setItem('token', response.data.token);
           setIsLoggedIn(true);
+          location.replace("http://localhost:5173");
         }
       })
       .catch(function (error) {

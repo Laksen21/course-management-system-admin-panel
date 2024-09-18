@@ -1,7 +1,8 @@
 import * as React from 'react';
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Accordion, Container, Typography, Button } from '@mui/material';
+import { Accordion, Container, Typography, Button, Box, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import AccordionActions from '@mui/material/AccordionActions';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
@@ -10,89 +11,241 @@ import Card from '@mui/material/Card';
 import CardActions from '@mui/material/CardActions';
 import CardContent from '@mui/material/CardContent';
 import CardMedia from '@mui/material/CardMedia';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 
-export default function Videos() {
-    const [data, setData] = useState([]);
-    const [courses, setCourses] = useState([
-        { id: 'sdf453', title: 'Testing', description: 'Testing decripption', videoPaths: ["r565657", "ghjghj"] },
-        { id: 'sdf67453', title: 'Testing', description: 'Testing decripption', videoPaths: ["r565657", "ghjghj"] },
-        { id: 'sdf467453', title: 'Testing', description: 'Testing decripption', videoPaths: ["r565657", "ghjghj"] },
-        { id: 'sdfg453', title: 'Testing', description: 'Testing decripption', videoPaths: ["r565657", "ghjghj"] },
-        { id: 'sdfq453', title: 'Testing', description: 'Testing decripption', videoPaths: ["r565657", "ghjghj"] },
-        { id: 'sdrf453', title: 'Testing', description: 'Testing decripption', videoPaths: ["r565657", "ghjghj"] },
-        { id: 'sdjf453', title: 'Testing', description: 'Testing decripption', videoPaths: ["r565657", "ghjghj"] },
-    ]);
-    const [videos, setvideos] = useState([
-        { id: 'sdf453', title: 'Testing', description: 'Testing decripption', videoPaths: ["r565657", "ghjghj"] },
-        { id: 'sdf67453', title: 'Testing', description: 'Testing decripption', videoPaths: ["r565657", "ghjghj"] },
-        { id: 'sdf467453', title: 'Testing', description: 'Testing decripption', videoPaths: ["r565657", "ghjghj"] },
-        { id: 'sdfg453', title: 'Testing', description: 'Testing decripption', videoPaths: ["r565657", "ghjghj"] },
-        { id: 'sdfq453', title: 'Testing', description: 'Testing decripption', videoPaths: ["r565657", "ghjghj"] },
-        { id: 'sdrf453', title: 'Testing', description: 'Testing decripption', videoPaths: ["r565657", "ghjghj"] },
-        { id: 'sdjf453', title: 'Testing', description: 'Testing decripption', videoPaths: ["r565657", "ghjghj"] },
-    ]);
+function Videos() {
+    const [courses, setCourses] = useState([]);
+    const [currentCourse, setCurrentCourse] = useState({ id: '', code: '', title: '', description: '', videos: [] });
+    const [currentVideo, setCurrentVideo] = useState({ id: '', name: '', videoFilePath: '', thumbnailFilePath: '' });
+    const [openDialog, setOpenDialog] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [expanded, setExpanded] = useState(false);
+    const token = localStorage.getItem('token');
 
     useEffect(() => {
-        loadAll();
+        loadAllCourses();
     }, [])
 
-    const loadAll = () => {
-        axios.get('https://jsonplaceholder.typicode.com/posts')
-            .then(function (response) {
-                console.log(response);
-                setData(response.data);
+    const handleChange = (panel) => (event, newExpanded) => {
+        setExpanded(newExpanded ? panel : false);
+    };
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setCurrentVideo(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSelectCourse = (course) => {
+        setCurrentCourse(course);
+    };
+
+    const handleCloseDialog = () => {
+        setOpenDialog(false);
+        setCurrentVideo({ id: '', name: '', videoFilePath: '', thumbnailFilePath: '' });
+        setIsEditing(false);
+    };
+
+    const handleVideoClick = (video) => {
+        setCurrentVideo(video);
+        setIsEditing(true);
+        setOpenDialog(true);
+    };
+
+    const handleAddVideoClick = () => {
+        setCurrentVideo({ id: '', name: '', videoFilePath: '', thumbnailFilePath: '' });
+        setIsEditing(false);
+        setOpenDialog(true);
+    };
+
+    const handleSubmit = () => {
+        if (isEditing) {
+            axios.put(`http://localhost:8080/course/course_with_video/${currentCourse.id}`, {
+                "code": currentCourse.code,
+                "title": currentCourse.title,
+                "description": currentCourse.description,
+                "videos": currentVideo
+            }, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
             })
-            .catch(function (error) {
-                console.log(error);
+                .then(function (response) {
+                    console.log(response);
+                    loadAllCourses();
+                })
+                .catch(function (error) {
+                    console.log(error);
+                });
+        } else {
+            axios.post('http://localhost:8080/course/course_with_video', {
+                "code": currentCourse.code,
+                "title": currentCourse.title,
+                "description": currentCourse.description,
+                "videos": currentCourse.videos
+            }, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+                .then(function (response) {
+                    console.log(response); 
+                    loadAllCourses();
+                })
+                .catch(function (error) {
+                    console.log(error);
+                });
+        }
+        handleCloseDialog();
+    };
+
+    const handleRemoveVideo = (videoId) => {
+        setCurrentCourse(prev => ({
+            ...prev,
+            videos: prev.videos.filter(video => video.id !== videoId)
+        }));
+    };
+
+    const handleSaveCourse = () => {
+        // Here you would send the updated currentCourse to your API
+        axios.put(`http://localhost:8080/course/${currentCourse.id}`, currentCourse, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+        .then(response => {
+            console.log('Course updated successfully', response.data);
+            loadAllCourses(); // Reload all courses to reflect changes
+        })
+        .catch(error => {
+            console.error('Error updating course', error);
+        });
+    };
+
+    const loadAllCourses = () => {
+        axios.get('http://localhost:8080/course', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+            .then(response => {
+                setCourses(response.data);
+            })
+            .catch(error => {
+                console.error(error);
             });
-    }
+    };
 
     return (
-        <Container maxWidth="xl" sx={{ mt: 2 }}>
+        <Container maxWidth="xl" sx={{ mt: 2, height: 'calc(100vh - 100px)' }}>
             <Typography variant="h4" fontWeight="550" gutterBottom>
                 Manage Videos
             </Typography>
+            <Grid container spacing={3} sx={{ height: 'calc(100% - 80px)' }}>
+                <Grid size={12} sx={{ height: '100%', overflowY: 'auto' }}>
+                    {courses.map((course) => (
+                        <Accordion sx={{ margin: 2 }}
+                            key={course.id}
+                            expanded={expanded === course.id} 
+                            onChange={handleChange(course.id)}
+                        >
+                            <AccordionSummary
+                                expandIcon={<ExpandMoreIcon fontSize="large" />}
+                                aria-controls="panel1-content"
+                                id="panel1-header"
+                                onClick={() => handleSelectCourse(course)}
+                            >
+                                <Typography variant="h6" fontWeight="600" gutterBottom>
+                                    {` ${course.code} | ${course.title}`}
+                                </Typography>
+                            </AccordionSummary>
+                            <AccordionDetails>
+                                <Box sx={{ display: 'flex', overflowX: 'auto' }}>
+                                    {course.videos.map((video) => (
+                                        <Card sx={{ maxWidth: 345, margin: 1 }}
+                                            key={video.id}
+                                            onClick={() => handleVideoClick(video)}
+                                        >
+                                            <CardMedia
+                                                sx={{ height: 140 }}
+                                                image={video.thumbnailFilePath || 'src/assets/images/contemplative-reptile.jpg'}
+                                                title={video.name}
+                                            />
+                                            <CardContent>
+                                                <Typography gutterBottom variant="h6" component="div">
+                                                    {video.name}
+                                                </Typography>
+                                                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                                    Video : {video.videoFilePath}
+                                                </Typography>
+                                                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                                    Thumbnail : {video.thumbnailFilePath}
+                                                </Typography>
+                                            </CardContent>
+                                            <CardActions>
+                                                <Button size="small" onClick={() => handleRemoveVideo(video.id)}>Remove video</Button>
+                                            </CardActions>
+                                        </Card>
+                                    ))}
+                                    <Card sx={{ maxWidth: 345, margin: 1 }} onClick={handleAddVideoClick} style={{ cursor: 'pointer' }}>
+                                        <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                                            <AddCircleOutlineIcon fontSize="large" />
+                                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                                Add video
+                                            </Typography>
+                                        </CardContent>
+                                    </Card>
+                                </Box>
+                            </AccordionDetails>
+                            <AccordionActions>
+                                <Button onClick={handleChange(false)}>Cancel</Button>
+                                <Button onClick={handleSaveCourse}>Save</Button>
+                            </AccordionActions>
+                        </Accordion>
+                    ))}
+                </Grid>
+            </Grid>
 
-            {courses.map((course) => (
-                <Accordion sx={{ mb: 1 }}
-                    key={course.id}>
-                    <AccordionSummary
-                        expandIcon={<ExpandMoreIcon />}
-                        aria-controls="panel1-content"
-                        id="panel1-header"
-                    >
-                        <Typography variant="h6" fontWeight="550" gutterBottom>
-                            {`ID: ${course.id} | ${course.title}`}
-                        </Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                        <Card sx={{ maxWidth: 345 }}>
-                            <CardMedia
-                                sx={{ height: 140 }}
-                                image='src/assets/images/contemplative-reptile.jpg'
-                                title="green iguana"
-                            />
-                            <CardContent>
-                                <Typography gutterBottom variant="h6" component="div">
-                                    Lizard
-                                </Typography>
-                                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                                    Lizards are a widespread group of squamate reptiles, with over 6,000
-                                    species, ranging across all continents except Antarctica
-                                </Typography>
-                            </CardContent>
-                            <CardActions>
-                                <Button size="small">Share</Button>
-                                <Button size="small">Learn More</Button>
-                            </CardActions>
-                        </Card>
-                    </AccordionDetails>
-                    <AccordionActions>
-                        <Button>Cancel</Button>
-                        <Button>Agree</Button>
-                    </AccordionActions>
-                </Accordion>
-            ))}
+            <Dialog open={openDialog} onClose={handleCloseDialog}>
+                <DialogTitle>{isEditing ? 'Edit Video' : 'Add Video'}</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        name="name"
+                        label="Name"
+                        type="text"
+                        fullWidth
+                        value={currentVideo.name}
+                        onChange={handleInputChange}
+                    />
+                    <TextField
+                        margin="dense"
+                        name="videoFilePath"
+                        label="Video file path"
+                        type="text"
+                        fullWidth
+                        value={currentVideo.videoFilePath}
+                        onChange={handleInputChange}
+                    />
+                    <TextField
+                        margin="dense"
+                        name="thumbnailFilePath"
+                        label="Thumbnail file path"
+                        type="text"
+                        fullWidth
+                        value={currentVideo.thumbnailFilePath}
+                        onChange={handleInputChange}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDialog}>Cancel</Button>
+                    <Button variant="contained" color="primary" onClick={handleSubmit}>
+                        {isEditing ? 'Save' : 'Add'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Container>
     );
 }
+
+export default Videos;

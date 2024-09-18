@@ -5,14 +5,10 @@ import {
     TableBody, TableCell, TableContainer, TableHead, TableRow
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import axios from "axios";
 import { Edit as EditIcon, Delete as DeleteIcon } from 'lucide-react';
 
-const token = localStorage.getItem('token');
-
-const Students = () => {
+function Students () {
     const [students, setStudents] = useState([]);
     const [courses, setCourses] = useState([]);
     const [newStudent, setNewStudent] = useState({
@@ -21,15 +17,14 @@ const Students = () => {
         email: '',
         tel_no: '',
         address: '',
-        courses: [],
         appPassword: '',
+        courses: [],
     });
     const [editingStudent, setEditingStudent] = useState(null);
-    const [searchId, setSearchId] = useState('')
+    const [searchId, setSearchId] = useState('');
+    const token = localStorage.getItem('token');
 
     useEffect(() => {
-        // Fetch courses from database
-        // This is a mock implementation
         loadAllStudents();
         loadAllCourses();
     }, []);
@@ -37,30 +32,6 @@ const Students = () => {
     const handleInputChange = (event) => {
         const { name, value } = event.target;
         setNewStudent((prev) => ({ ...prev, [name]: value }));
-    };
-
-    const handleSearchById = () => {
-        axios.get(`http://localhost:8080/student/${searchId}`, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        })
-            .then(function (response) {
-                //console.log(response);
-                setNewStudent({
-                    id: response.data.id,
-                    name: response.data.name,
-                    email: response.data.email,
-                    tel_no: response.data.tel_no,
-                    address: response.data.address,
-                    courses: response.data.courses,
-                    appPassword: response.data.appPassword,
-                });
-            })
-            .catch(function (error) {
-                console.log(error);
-
-            });
     };
 
     const handleCourseChange = (event) => {
@@ -72,7 +43,6 @@ const Students = () => {
             courses: value, // set the selected course objects directly
         }));
     };
-
 
     const handleEditStudent = (student) => {
         setEditingStudent(student);
@@ -87,8 +57,36 @@ const Students = () => {
         });
     };
 
-    const handleAddStudent = () => {
+    // search by id 
+    const handleSearchById = () => {
+        
+        axios.get(`http://localhost:8080/student/${searchId}`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+            .then(function (response) {
+                //console.log(response);
+                setNewStudent({
+                    id: response.data.id,
+                    name: response.data.name,
+                    email: response.data.email,
+                    tel_no: response.data.tel_no,
+                    address: response.data.address,
+                    appPassword: response.data.appPassword,
+                    courses: response.data.courses,
+                });
+                setEditingStudent(response.data);
+            })
+            .catch(function (error) {
+                console.log(error);
+               
+            });
+    };
 
+    // add/save student 
+    const handleAddStudent = () => {
+        
         axios.post('http://localhost:8080/student/student_with_course', {
             "name": newStudent.name,
             "email": newStudent.email,
@@ -102,7 +100,7 @@ const Students = () => {
             }
         })
             .then(function (response) {
-                console.log(response);
+                // console.log(response);
                 clearFields();
                 loadAllStudents();
             })
@@ -111,8 +109,9 @@ const Students = () => {
             });
     };
 
+    // update student
     const handleUpdateStudent = () => {
-
+        
         axios.put(`http://localhost:8080/student/student_with_course/${newStudent.id}`, {
             "name": newStudent.name,
             "email": newStudent.email,
@@ -126,17 +125,17 @@ const Students = () => {
             }
         })
             .then(function (response) {
-                console.log(response);
+                // console.log(response);
                 setEditingStudent(null);
                 clearFields();
                 loadAllStudents();
             })
             .catch(function (error) {
                 console.log(error);
-
             });
     };
 
+    // delete student
     const handleDeleteStudent = (id) => {
         axios.delete(`http://localhost:8080/student/${id}`, {
             headers: {
@@ -152,6 +151,7 @@ const Students = () => {
             });
     };
 
+    // load all students
     const loadAllStudents = () => {
         axios.get('http://localhost:8080/student', {
             headers: {
@@ -167,6 +167,7 @@ const Students = () => {
             });
     }
 
+    // load all courses
     const loadAllCourses = () => {
         axios.get('http://localhost:8080/course', {
             headers: {
@@ -191,16 +192,17 @@ const Students = () => {
             courses: [],
             appPassword: '',
         });
+        setEditingStudent(null)
     }
     return (
         <Container maxWidth="xl" sx={{ mt: 2, height: 'calc(100vh - 100px)' }}>
             <Typography variant="h4" fontWeight="550" gutterBottom>
                 Manage Student
             </Typography>
-            <Grid container spacing={3} sx={{ height: 'calc(100% - 60px)' }}>
+            <Grid container spacing={1} sx={{mt:2, height: 'calc(100% - 60px)' }}>
                 <Grid size={6} sx={{ height: '100%', overflowY: 'auto' }}>
-                    <Paper elevation={3} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                        <Paper elevation={1} sx={{ p: 1, mb: 2, width: '100%' }}>
+                    <Paper sx={{  height: '100%', display: 'flex', flexDirection: 'column' }}>
+                        <Paper elevation={2} sx={{ p: 1, mb: 2, width: '51%' }}>
                             <TextField
                                 id="standard-search"
                                 label="Search Id"
@@ -301,7 +303,7 @@ const Students = () => {
                     </Paper>
                 </Grid>
                 <Grid size={6} sx={{ height: '100%', overflowY: 'auto' }}>
-                    <Paper elevation={3} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <Paper sx={{ pl: 1, height: '100%', display: 'flex', flexDirection: 'column' }}>
                         <TableContainer sx={{ flexGrow: 1, overflowY: 'auto' }}>
                             <Table stickyHeader>
                                 <TableHead>
