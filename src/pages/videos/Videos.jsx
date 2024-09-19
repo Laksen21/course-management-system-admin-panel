@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Accordion, Container, Typography, Button, Box, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
 import Grid from '@mui/material/Grid2';
-import AccordionActions from '@mui/material/AccordionActions';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -42,7 +41,7 @@ function Videos() {
     const handleCloseDialog = () => {
         setOpenDialog(false);
         setCurrentVideo({ id: '', name: '', videoFilePath: '', thumbnailFilePath: '' });
-        setIsEditing(false);
+        //setIsEditing(false);
     };
 
     const handleVideoClick = (video) => {
@@ -59,36 +58,34 @@ function Videos() {
 
     const handleSubmit = () => {
         if (isEditing) {
-            axios.put(`http://localhost:8080/course/course_with_video/${currentCourse.id}`, {
-                "code": currentCourse.code,
-                "title": currentCourse.title,
-                "description": currentCourse.description,
-                "videos": currentVideo
+            axios.put(`http://localhost:8080/video/update/${currentVideo.id}`, {
+                "name": currentVideo.name,
+                "videoFilePath": currentVideo.videoFilePath,
+                "thumbnailFilePath": currentVideo.thumbnailFilePath
             }, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
             })
                 .then(function (response) {
-                    console.log(response);
+                    // console.log(response);
                     loadAllCourses();
                 })
                 .catch(function (error) {
                     console.log(error);
                 });
         } else {
-            axios.post('http://localhost:8080/course/course_with_video', {
-                "code": currentCourse.code,
-                "title": currentCourse.title,
-                "description": currentCourse.description,
-                "videos": currentCourse.videos
+            axios.post(`http://localhost:8080/video/add/${currentCourse.id}`, {
+                "name": currentVideo.name,
+                "videoFilePath": currentVideo.videoFilePath,
+                "thumbnailFilePath": currentVideo.thumbnailFilePath
             }, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
             })
                 .then(function (response) {
-                    console.log(response); 
+                    // console.log(response); 
                     loadAllCourses();
                 })
                 .catch(function (error) {
@@ -98,27 +95,19 @@ function Videos() {
         handleCloseDialog();
     };
 
-    const handleRemoveVideo = (videoId) => {
-        setCurrentCourse(prev => ({
-            ...prev,
-            videos: prev.videos.filter(video => video.id !== videoId)
-        }));
-    };
-
-    const handleSaveCourse = () => {
-        // Here you would send the updated currentCourse to your API
-        axios.put(`http://localhost:8080/course/${currentCourse.id}`, currentCourse, {
+    const handleDeleteVideo = (videoId) => {
+        axios.delete(`http://localhost:8080/video/delete/${videoId}`, {
             headers: {
                 Authorization: `Bearer ${token}`
             }
         })
-        .then(response => {
-            console.log('Course updated successfully', response.data);
-            loadAllCourses(); // Reload all courses to reflect changes
-        })
-        .catch(error => {
-            console.error('Error updating course', error);
-        });
+            .then(function (response) {
+                // console.log(response);
+                loadAllCourses();
+            })
+            .catch(function (error) {
+                console.log(error);
+            });
     };
 
     const loadAllCourses = () => {
@@ -167,7 +156,7 @@ function Videos() {
                                         >
                                             <CardMedia
                                                 sx={{ height: 140 }}
-                                                image={video.thumbnailFilePath || 'src/assets/images/contemplative-reptile.jpg'}
+                                                image={video.thumbnailFilePath} //|| 'src/assets/images/contemplative-reptile.jpg'
                                                 title={video.name}
                                             />
                                             <CardContent>
@@ -182,7 +171,7 @@ function Videos() {
                                                 </Typography>
                                             </CardContent>
                                             <CardActions>
-                                                <Button size="small" onClick={() => handleRemoveVideo(video.id)}>Remove video</Button>
+                                                <Button size="small" onClick={() => handleDeleteVideo(video.id)}>Remove video</Button>
                                             </CardActions>
                                         </Card>
                                     ))}
@@ -196,10 +185,6 @@ function Videos() {
                                     </Card>
                                 </Box>
                             </AccordionDetails>
-                            <AccordionActions>
-                                <Button onClick={handleChange(false)}>Cancel</Button>
-                                <Button onClick={handleSaveCourse}>Save</Button>
-                            </AccordionActions>
                         </Accordion>
                     ))}
                 </Grid>
