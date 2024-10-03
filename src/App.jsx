@@ -11,6 +11,7 @@ import LoginForm from './components/login/LoginForm';
 import Courses from './pages/courses/Courses';
 import Videos from './pages/videos/Videos'
 import Students from './pages/students/Students'
+import NotFound from './pages/NotFoundPage';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -53,6 +54,7 @@ function App() {
             <Route path='/courses' element={<Courses />} />
             <Route path='/videos' element={<Videos />} />
             <Route path='/students' element={<Students />} />
+            <Route path="*" element={<NotFound />} /> 
           </Routes>
         </BrowserRouter>
 

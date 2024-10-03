@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Accordion, Container, Typography, Button, Box, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
+import { Accordion, Container, Typography, Button, Box, Dialog, IconButton, DialogTitle, DialogContent, DialogActions, TextField, Tooltip } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
@@ -11,19 +11,34 @@ import CardActions from '@mui/material/CardActions';
 import CardContent from '@mui/material/CardContent';
 import CardMedia from '@mui/material/CardMedia';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import { Edit as EditIcon, Trash2 as DeleteIcon } from 'lucide-react';
 
 function Videos() {
     const [courses, setCourses] = useState([]);
     const [currentCourse, setCurrentCourse] = useState({ id: '', code: '', title: '', description: '', videos: [] });
-    const [currentVideo, setCurrentVideo] = useState({ id: '', name: '', videoFilePath: '', thumbnailFilePath: '' });
+    const [currentVideo, setCurrentVideo] = useState({
+        id: '',
+        name: '',
+        videoFile: null,
+        thumbnailFile: null
+    });
     const [openDialog, setOpenDialog] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [expanded, setExpanded] = useState(false);
+    const [isTokenValid, setTokenValid] = useState(true);
     const token = localStorage.getItem('token');
+    const serverUrl = "http://localhost:8080";
 
     useEffect(() => {
         loadAllCourses();
-    }, [])
+        handleTokenValidation();
+    }, [isTokenValid]);
+
+    const handleTokenValidation = () => {
+        if (!isTokenValid) {
+            localStorage.removeItem('token');
+        }
+    }
 
     const handleChange = (panel) => (event, newExpanded) => {
         setExpanded(newExpanded ? panel : false);
@@ -40,7 +55,7 @@ function Videos() {
 
     const handleCloseDialog = () => {
         setOpenDialog(false);
-        setCurrentVideo({ id: '', name: '', videoFilePath: '', thumbnailFilePath: '' });
+        setCurrentVideo({ id: '', name: '', videoFile: null, thumbnailFile: null });
         //setIsEditing(false);
     };
 
@@ -51,52 +66,72 @@ function Videos() {
     };
 
     const handleAddVideoClick = () => {
-        setCurrentVideo({ id: '', name: '', videoFilePath: '', thumbnailFilePath: '' });
+        setCurrentVideo({ id: '', name: '', videoFile: null, thumbnailFile: null });
         setIsEditing(false);
         setOpenDialog(true);
     };
 
-    const handleSubmit = () => {
-        if (isEditing) {
-            axios.put(`http://localhost:8080/video/update/${currentVideo.id}`, {
-                "name": currentVideo.name,
-                "videoFilePath": currentVideo.videoFilePath,
-                "thumbnailFilePath": currentVideo.thumbnailFilePath
-            }, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            })
-                .then(function (response) {
-                    // console.log(response);
-                    loadAllCourses();
-                })
-                .catch(function (error) {
-                    console.log(error);
-                });
-        } else {
-            axios.post(`http://localhost:8080/video/add/${currentCourse.id}`, {
-                "name": currentVideo.name,
-                "videoFilePath": currentVideo.videoFilePath,
-                "thumbnailFilePath": currentVideo.thumbnailFilePath
-            }, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            })
-                .then(function (response) {
-                    // console.log(response); 
-                    loadAllCourses();
-                })
-                .catch(function (error) {
-                    console.log(error);
-                });
+    const handleSubmit = async () => {
+        const formData = new FormData();
+
+        // Append video and thumbnail files to the FormData object
+        if (currentVideo.videoFile) {
+            formData.append('video', currentVideo.videoFile);
         }
-        handleCloseDialog();
+        if (currentVideo.thumbnailFile) {
+            formData.append('thumbnail', currentVideo.thumbnailFile);
+        }
+
+        try {
+            if (isEditing) {
+                // Update video details
+                const response = await axios.put(`${serverUrl}/video/update/${currentVideo.id}`, {
+                    name: currentVideo.name,
+                }, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                await axios.post(`${serverUrl}/video/file-upload/${response.data.id}`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+            } else {
+                // Add new video
+                const response = await axios.post(`${serverUrl}/video/add/${currentCourse.id}`, {
+                    name: currentVideo.name,
+                    
+                }, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+                
+                // console.log(response)
+                // Upload files to the server
+                await axios.post(`${serverUrl}/video/file-upload/${response.data.id}`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+            }
+
+            // Reload courses and close dialog
+            loadAllCourses();
+            handleCloseDialog();
+        } catch (error) {
+            console.error('Error uploading files:', error);
+        }
     };
 
+
     const handleDeleteVideo = (videoId) => {
-        axios.delete(`http://localhost:8080/video/delete/${videoId}`, {
+        axios.delete(`${serverUrl}/video/delete/${videoId}`, {
             headers: {
                 Authorization: `Bearer ${token}`
             }
@@ -111,12 +146,13 @@ function Videos() {
     };
 
     const loadAllCourses = () => {
-        axios.get('http://localhost:8080/course', {
+        axios.get(`${serverUrl}/course`, {
             headers: {
                 Authorization: `Bearer ${token}`
             }
         })
             .then(response => {
+                // console.log(response);
                 setCourses(response.data);
             })
             .catch(error => {
@@ -134,7 +170,7 @@ function Videos() {
                     {courses.map((course) => (
                         <Accordion sx={{ margin: 2 }}
                             key={course.id}
-                            expanded={expanded === course.id} 
+                            expanded={expanded === course.id}
                             onChange={handleChange(course.id)}
                         >
                             <AccordionSummary
@@ -152,11 +188,11 @@ function Videos() {
                                     {course.videos.map((video) => (
                                         <Card sx={{ maxWidth: 345, margin: 1 }}
                                             key={video.id}
-                                            onClick={() => handleVideoClick(video)}
+
                                         >
                                             <CardMedia
                                                 sx={{ height: 140 }}
-                                                image={video.thumbnailFilePath} //|| 'src/assets/images/contemplative-reptile.jpg'
+                                                image={`${serverUrl}/video/thumbnail/${video.id}`}
                                                 title={video.name}
                                             />
                                             <CardContent>
@@ -170,8 +206,18 @@ function Videos() {
                                                     Thumbnail : {video.thumbnailFilePath}
                                                 </Typography>
                                             </CardContent>
-                                            <CardActions>
-                                                <Button size="small" onClick={() => handleDeleteVideo(video.id)}>Remove video</Button>
+                                            <CardActions style={{ justifyContent: 'flex-end', marginRight: 10 }}>
+                                                <Tooltip title="Edit video">
+                                                    <IconButton edge="end" aria-label="delete" onClick={() => handleVideoClick(video)}>
+                                                        <EditIcon color="blue" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                <Tooltip title="Remove video">
+                                                    <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteVideo(video.id)}>
+                                                        <DeleteIcon color="red" style={{ marginLeft: 10 }} />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                {/* <Button size="small" onClick={() => handleDeleteVideo(video.id)}>Remove video</Button> */}
                                             </CardActions>
                                         </Card>
                                     ))}
@@ -203,25 +249,37 @@ function Videos() {
                         value={currentVideo.name}
                         onChange={handleInputChange}
                     />
-                    <TextField
-                        margin="dense"
-                        name="videoFilePath"
-                        label="Video file path"
-                        type="text"
-                        fullWidth
-                        value={currentVideo.videoFilePath}
-                        onChange={handleInputChange}
+                    <input
+                        accept="video/*"
+                        style={{ display: 'none' }}
+                        id="video-file"
+                        type="file"
+                        onChange={(e) => setCurrentVideo({ ...currentVideo, videoFile: e.target.files[0] })}
                     />
-                    <TextField
-                        margin="dense"
-                        name="thumbnailFilePath"
-                        label="Thumbnail file path"
-                        type="text"
-                        fullWidth
-                        value={currentVideo.thumbnailFilePath}
-                        onChange={handleInputChange}
+
+                    <label htmlFor="video-file">
+                        <Button variant="contained" component="span" style={{ marginRight: 5 }}>
+                            Upload Video
+                        </Button>
+                    </label>
+                    {currentVideo.videoFile && <Typography>{currentVideo.videoFile.name}</Typography>}
+
+                    <input
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        id="thumbnail-file"
+                        type="file"
+                        onChange={(e) => setCurrentVideo({ ...currentVideo, thumbnailFile: e.target.files[0] })}
                     />
+
+                    <label htmlFor="thumbnail-file">
+                        <Button variant="contained" component="span">
+                            Upload Thumbnail
+                        </Button>
+                    </label>
+                    {currentVideo.thumbnailFile && <Typography>{currentVideo.thumbnailFile.name}</Typography>}
                 </DialogContent>
+
                 <DialogActions>
                     <Button onClick={handleCloseDialog}>Cancel</Button>
                     <Button variant="contained" color="primary" onClick={handleSubmit}>

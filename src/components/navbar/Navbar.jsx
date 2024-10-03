@@ -37,7 +37,7 @@ function Navbar() {
   };
 
   const handleLogoutClick = () => {
-    console.log('Logout clicked');
+    // console.log('Logout clicked');
     localStorage.removeItem('token');
     location.replace("http://localhost:5173");
   };
@@ -142,7 +142,7 @@ function Navbar() {
           >
             CMS - Admin
           </Typography>
-          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, ml: '18vw' }}>
+          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, justifyContent:'flex-end', mr: 2 }}>
             {pages.map((page) => (
               <Button
                 key={page}
