@@ -4,7 +4,7 @@ import { Typography, Container, Box } from '@mui/material';
 const NotFound = () => {
   return (
     <Container>
-      <Box sx={{ mt: 8, textAlign: 'center' }}>
+      <Box sx={{ mt: '25vh', textAlign: 'center' }}>
         <Typography variant="h1" component="h1" gutterBottom>
           404
         </Typography>

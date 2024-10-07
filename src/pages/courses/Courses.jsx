@@ -6,7 +6,7 @@ import { Edit as EditIcon, Trash2 as DeleteIcon } from 'lucide-react';
 import Alert from '@mui/material/Alert';
 import AlertTitle from '@mui/material/AlertTitle';
 
-import Loader from '../../components/Loader/Loader';
+import Loader from '../../components/loader/Loader';
 
 function Courses() {
     const [courses, setCourses] = useState([]);
@@ -126,12 +126,12 @@ function Courses() {
                     clearFields();
                     setIsActionLoading(false);
                     loadAllCourses();
-                    setAlert('success', 'Course Added', 'The new course has been successfully added.');
+                    showAlert('success', 'Course Added', 'The new course has been successfully added.');
                 })
                 .catch(function (error) {
                     console.log(error);
                     setIsActionLoading(false);
-                    setAlert('error', 'Addition Failed', 'Failed to add the new course. Please try again.');
+                    showAlert('error', 'Addition Failed', 'Failed to add the new course. Please try again.');
                 });
         }
         handleCloseDialog();
@@ -163,6 +163,26 @@ function Courses() {
             });
     };
 
+    // delete course
+    const handleDeleteCourse = (id) => {
+        setIsActionLoading(true);
+        axios.delete(`${serverUrl}/course/${id}`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+            .then(function (response) {
+                setIsActionLoading(false);
+                loadAllCourses();
+                showAlert('success', 'Course Deleted', 'The course has been successfully deleted.');
+            })
+            .catch(function (error) {
+                console.log(error);
+                setIsActionLoading(false);
+                showAlert('error', 'Deletion Failed', 'Failed to delete the course. Please try again.');
+            });
+    };
+
     const handleDelBtnClick = (course) => {
         setCourseToDelete(course);
         setDelMsgOpen(true);
@@ -184,26 +204,6 @@ function Courses() {
         setDelMsgOpen(false);
     };
 
-    // delete course
-    const handleDeleteCourse = (id) => {
-        setIsActionLoading(true);
-        axios.delete(`${serverUrl}/course/${id}`, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        })
-            .then(function (response) {
-                setIsActionLoading(false);
-                loadAllCourses();
-                setAlert('success', 'Course Deleted', 'The course has been successfully deleted.');
-            })
-            .catch(function (error) {
-                console.log(error);
-                setIsActionLoading(false);
-                setAlert('error', 'Deletion Failed', 'Failed to delete the course. Please try again.');
-            });
-    };
-
     const clearFields = () => {
         setCurrentCourse({ code: '', title: '', description: '' });
     }
@@ -220,7 +220,7 @@ function Courses() {
                 autoHideDuration={3000}
                 onClose={handleCloseAlert}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                sx={{ boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.25)' }}
+                sx={{ boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.2)' }}
             >
                 <Alert onClose={handleCloseAlert} severity={alert.severity} sx={{ width: '100%' }}>
                     <AlertTitle>{alert.title}</AlertTitle>
@@ -229,7 +229,7 @@ function Courses() {
             </Snackbar>
 
             <Typography variant="h4" fontWeight="550" gutterBottom>
-                Manage Course
+                Manage Courses
             </Typography>
             <Button variant="contained" color="primary" onClick={() => handleOpenDialog()} sx={{ mb: 2 }}>
                 Add Course
@@ -273,7 +273,7 @@ function Courses() {
                                         <Typography variant="body">
                                             {`Code: ${course.code} | ${course.description}`}
                                             <br />
-                                            {`${course.video_file_path} videos`}
+                                            {`${course.videos.length} videos`}
                                         </Typography>
                                     }
                                 />

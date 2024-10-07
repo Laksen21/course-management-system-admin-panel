@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import {
     Box, Container, Typography, TextField, Button, Select, IconButton,
-    MenuItem, FormControl, InputLabel, Paper, Table, Tooltip,
+    MenuItem, FormControl, InputLabel, Paper, Table, Tooltip, Snackbar,
     TableBody, TableCell, TableContainer, TableHead, TableRow,
     DialogActions, DialogContent, DialogTitle, Dialog, DialogContentText
 } from '@mui/material';
+import Alert from '@mui/material/Alert';
+import AlertTitle from '@mui/material/AlertTitle';
 import Grid from '@mui/material/Grid2';
 import axios from "axios";
 import { Edit as EditIcon, Trash2 as DeleteIcon } from 'lucide-react';
+
+import Loader from '../../components/loader/Loader';
 
 function Students() {
     const [students, setStudents] = useState([]);
@@ -24,7 +28,9 @@ function Students() {
     const [editingStudent, setEditingStudent] = useState(null);
     const [searchId, setSearchId] = useState('');
     const [errors, setErrors] = useState({ name: false, email: false, tel_no: false, address: false, appPassword: false, courses: false });
+    const [alert, setAlert] = useState({ show: false, severity: 'success', title: '', message: '' });
     const [isLoading, setIsLoading] = useState(true);
+    const [isDeleteBtnVisible, setDeleteBtnVisible] = useState(false);
     const [isActionLoading, setIsActionLoading] = useState(false);
     const [delMsgOpen, setDelMsgOpen] = useState(false);
     const [studentToDelete, setStudentToDelete] = useState(null);
@@ -87,11 +93,28 @@ function Students() {
             ...student,
             courses: selectedCourses, // set full course objects
         });
+        setDeleteBtnVisible(true);
+    };
+
+    //alets
+    const showAlert = (severity, title, message) => {
+        setAlert({ open: true, severity, title, message });
+        // Auto-hide the alert after 3 seconds
+        setTimeout(() => {
+            setAlert(prev => ({ ...prev, open: false }));
+        }, 3000);
+    }
+    
+    const handleCloseAlert = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        setAlert(prev => ({ ...prev, open: false }));
     };
 
     // search by id 
     const handleSearchById = () => {
-
+        setIsActionLoading(true);
         axios.get(`${serverUrl}/student/${searchId}`, {
             headers: {
                 Authorization: `Bearer ${token}`
@@ -99,6 +122,7 @@ function Students() {
         })
             .then(function (response) {
                 //console.log(response);
+                setIsActionLoading(false);
                 setNewStudent({
                     id: response.data.id,
                     name: response.data.name,
@@ -117,10 +141,12 @@ function Students() {
                 });
 
                 setEditingStudent(response.data);
+                setDeleteBtnVisible(true);
             })
             .catch(function (error) {
                 console.log(error);
-
+                setIsActionLoading(false);
+                showAlert('error', 'Student Not Found', 'The student could not be found. Please check the Id and try again.');
             });
     };
 
@@ -143,9 +169,11 @@ function Students() {
                 // console.log(response);
                 clearFields();
                 loadAllStudents();
+                showAlert('success', 'Student Added', 'The new student has been successfully added.');
             })
             .catch(function (error) {
                 console.log(error);
+                showAlert('error', 'Addition Failed', 'Failed to add the new student. Please try again.');
             });
     };
 
@@ -169,9 +197,11 @@ function Students() {
                 setEditingStudent(null);
                 clearFields();
                 loadAllStudents();
+                showAlert('success', 'Student Updated', 'The student has been successfully updated.');
             })
             .catch(function (error) {
                 console.log(error);
+                showAlert('error', 'Update Failed', 'Failed to update the student. Please try again.');
             });
     };
 
@@ -206,14 +236,18 @@ function Students() {
             .then(function (response) {
                 // console.log(response);
                 loadAllStudents();
+                clearFields();
+                showAlert('success', 'Student Deleted', 'The student has been successfully deleted.');
             })
             .catch(function (error) {
                 console.log(error);
+                showAlert('error', 'Deletion Failed', 'Failed to delete the student. Please try again.');
             });
     };
 
     // load all students
     const loadAllStudents = () => {
+        setIsLoading(true);
         axios.get(`${serverUrl}/student`, {
             headers: {
                 Authorization: `Bearer ${token}`
@@ -221,10 +255,13 @@ function Students() {
         })
             .then(function (response) {
                 // console.log(response);
+                setIsLoading(false);
                 setStudents(response.data);
             })
             .catch(function (error) {
                 console.log(error);
+                setIsLoading(false);
+                setAlert({ show: true, severity: 'error', title: 'Loading Error', message: 'Failed to load students. Please reload the page.' });
             });
     }
 
@@ -255,19 +292,35 @@ function Students() {
         });
         setEditingStudent(null);
         setErrors({ name: false, email: false, tel_no: false, address: false, appPassword: false, courses: false });
+        setDeleteBtnVisible(false);
     }
     return (
         <Container maxWidth="xl" sx={{ mt: 2, height: 'calc(100vh - 100px)' }}>
+
+            {(isLoading || isActionLoading) && (
+                <div className="loader-container">
+                    <Loader />
+                </div>
+            )}
+
             <Typography variant="h4" fontWeight="550" gutterBottom>
-                Manage Student
+                Manage Students
             </Typography>
+
+            {alert.show && (
+                <Alert severity={alert.severity} onClose={() => setAlert({ ...alert, show: false })} sx={{ mb: 2 }}>
+                    <AlertTitle>{alert.title}</AlertTitle>
+                    {alert.message}
+                </Alert>
+            )}
+
             <Grid container spacing={1} sx={{ mt: 2, height: 'calc(100% - 60px)' }}>
                 <Grid size={6} sx={{ height: '100%', overflowY: 'auto' }}>
                     <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                         <Paper elevation={2} sx={{ p: 1, mb: 2, width: '51%' }}>
                             <TextField
                                 id="standard-search"
-                                label="Search Id"
+                                label="Search Student Id"
                                 type="search"
                                 name='searchId'
                                 value={searchId}
@@ -302,7 +355,7 @@ function Students() {
                                 </Grid>
                                 <Grid size={6}>
                                     <TextField
-                                        inputProps={{ maxLength: 10, pattern: "[0-9]{10}"  }}
+                                        inputProps={{ maxLength: 10, pattern: "[0-9]{10}" }}
                                         fullWidth
                                         type='tel'
                                         label="Tel No"
@@ -365,14 +418,25 @@ function Students() {
                                     >
                                         {editingStudent ? 'Update Student' : 'Add Student'}
                                     </Button>
+                                    {isDeleteBtnVisible && (
+                                        <Button
+                                            variant="contained"
+                                            color="error"
+                                            onClick={() => handleDelBtnClick(newStudent)}
+                                            sx={{ ml: 2 }}
+                                        >
+                                            Delete
+                                        </Button>
+                                    )}
                                     <Button
                                         variant="contained"
-                                        color="error"
+                                        color="warning"
                                         onClick={clearFields}
                                         sx={{ ml: 2 }}
                                     >
                                         Clear
                                     </Button>
+
                                 </Grid>
                             </Grid>
                         </Box>
@@ -443,6 +507,20 @@ function Students() {
                     </Button>
                 </DialogActions>
             </Dialog>
+            {/* alerts */}
+            <Snackbar
+                open={alert.open}
+                autoHideDuration={3000}
+                onClose={handleCloseAlert}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                sx={{ boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.2)' }}
+            >
+                <Alert onClose={handleCloseAlert} severity={alert.severity} sx={{ width: '100%' }}>
+                    <AlertTitle>{alert.title}</AlertTitle>
+                    {alert.message}
+                </Alert>
+            </Snackbar>
+
         </Container>
     );
 };

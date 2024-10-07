@@ -22,22 +22,10 @@ function Navbar() {
   const navigate = useNavigate();  // Set up the navigate hook
 
   const handleProfileClick = () => {
-    console.log('Profile clicked');
-    navigate('/profile');  // Navigate to the profile page
-  };
-
-  const handleAccountClick = () => {
-    console.log('Account clicked');
-    // Add your account logic here
-  };
-
-  const handleDashboardClick = () => {
-    console.log('Dashboard clicked');
-    // Add your dashboard logic here
+    navigate('/users');  // Navigate to the profile page
   };
 
   const handleLogoutClick = () => {
-    // console.log('Logout clicked');
     localStorage.removeItem('token');
     location.replace("http://localhost:5173");
   };
@@ -60,9 +48,7 @@ function Navbar() {
 
   const pages = ['courses', 'videos', 'students'];
   const settings = [
-    { label: 'Profile', action: handleProfileClick },
-    { label: 'Account', action: handleAccountClick },
-    { label: 'Dashboard', action: handleDashboardClick },
+    { label: 'Manage users', action: handleProfileClick },
     { label: 'Logout', action: handleLogoutClick },
   ];
 
@@ -155,7 +141,7 @@ function Navbar() {
             ))}
           </Box>
           <Box sx={{ flexGrow: 0 }}>
-            <Tooltip title="Open settings">
+            <Tooltip title="Open menu">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
                 <Avatar />
               </IconButton>
